@@ -12,7 +12,7 @@ const Card = require("../models/card");
 const createCard = (req, res) => {
   const { name, link } = req.body;
 
-  return User.create({ name, link })
+  return Card.create({ name, link })
     .then((card) => {
       res.status(201).send(card);
     })

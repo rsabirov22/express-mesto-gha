@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const UserNotFound = require("../errors/UserNotFound");
 
 // 200 - запрос прошел успешно
 // 201 - запрос прошел успешно, ресурс создан
@@ -17,16 +18,91 @@ const createUser = (req, res) => {
       res.status(201).send(user);
     })
     .catch((err) => {
+      if (err.name === "ValidationError") {
+        res.status(400).send({ message: `Error while validating user ${err}` });
+
+        return;
+      }
       res.status(500).send({ message: `Error while creating user ${err}` });
     });
 }
 
 const getUser = (req, res) => {
+  return User.findById(req.user._id)
+    .orFail(() => {
+      throw new UserNotFound();
+    })
+    .then((user) => {
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === "UserNotFound") {
+        res.status(err.status).send(err.message);
 
+        return;
+      }
+      res.status(500).send({ message: `Error while creating user ${err}` });
+    });
 }
 
 const getUsers = (req, res) => {
-
+  return User.find({})
+    .then((users) => {
+      res.status(200).send(users);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: `Error while creating user ${err}` });
+    });
 }
 
-module.exports = { createUser, getUser, getUsers };
+const editUser = (req, res) => {
+  const { name, about } = req.body;
+
+  return User.findByIdAndUpdate(req.user._id, { name, about })
+    .orFail(() => {
+      throw new UserNotFound();
+    })
+    .then((user) => {
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === "UserNotFound") {
+        res.status(err.status).send(err.message);
+
+        return;
+      }
+      if (err.name === "ValidationError") {
+        res.status(400).send({ message: `Invalid data ${err}` });
+
+        return;
+      }
+      res.status(500).send({ message: `Error while creating user ${err}` });
+    });
+}
+
+const changeUserAvatar = (req, res) => {
+  const { avatar } = req.body;
+
+  return User.findByIdAndUpdate(req.user._id, { avatar })
+    .orFail(() => {
+      throw new UserNotFound();
+    })
+    .then((user) => {
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === "UserNotFound") {
+        res.status(err.status).send(err.message);
+
+        return;
+      }
+      if (err.name === "ValidationError") {
+        res.status(400).send({ message: `Invalid data ${err}` });
+
+        return;
+      }
+      res.status(500).send({ message: `Error while creating user ${err}` });
+    });
+}
+
+module.exports = { createUser, getUser, getUsers, editUser, changeUserAvatar };

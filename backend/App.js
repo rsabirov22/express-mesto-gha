@@ -11,10 +11,6 @@ const { PORT = 3000 } = process.env;
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
 // подключаем мидлвары, роуты и всё остальное...
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/", usersRouter);
 app.use((req, res, next) => {
   req.user = {
     _id: '62f38de1979629b38bb58c6f' // вставьте сюда _id созданного в предыдущем пункте пользователя
@@ -22,6 +18,12 @@ app.use((req, res, next) => {
 
   next();
 });
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/", usersRouter);
+app.use("/users/me", usersRouter);
+app.use("/users/me/avatar", usersRouter);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);

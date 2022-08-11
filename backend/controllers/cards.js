@@ -29,4 +29,12 @@ const removeCard = (req, res) => {
 
 }
 
-module.exports = { createCard, getCards, removeCard };
+const likeCard = (req, res) => {
+
+}
+
+const dislikeCard = (req, res) => {
+
+}
+
+module.exports = { createCard, getCards, removeCard, likeCard, dislikeCard };

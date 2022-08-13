@@ -58,7 +58,15 @@ const getUsers = (req, res) => {
 const editUser = (req, res) => {
   const { name, about } = req.body;
 
-  return User.findByIdAndUpdate(req.user._id, { name, about })
+  return User.findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      {
+        new: true, // обработчик then получит на вход обновлённую запись
+        runValidators: true, // данные будут валидированы перед изменением
+        upsert: true // если пользователь не найден, он будет создан
+      }
+    )
     .orFail(() => {
       throw new UserNotFound();
     })
@@ -83,7 +91,15 @@ const editUser = (req, res) => {
 const changeUserAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  return User.findByIdAndUpdate(req.user._id, { avatar })
+  return User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      {
+        new: true, // обработчик then получит на вход обновлённую запись
+        runValidators: true, // данные будут валидированы перед изменением
+        upsert: true // если пользователь не найден, он будет создан
+      }
+    )
     .orFail(() => {
       throw new UserNotFound();
     })

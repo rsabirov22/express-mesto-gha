@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const usersRouter = require('./routes/users');
+const cardsRouter = require('./routes/cards');
 
 const app = express();
 
@@ -20,11 +21,14 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
 app.use("/", usersRouter);
 app.use("/users/me", usersRouter);
 app.use("/users/me/avatar", usersRouter);
+app.use("/", cardsRouter);
+app.use("/cards/:cardId", cardsRouter);
+app.use("/cards/:cardId/likes", cardsRouter);
 
+app.use(express.static(path.join(__dirname, "public")));
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
 });

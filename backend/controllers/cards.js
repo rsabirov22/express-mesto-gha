@@ -8,9 +8,11 @@ const Card = require("../models/card");
 // 400 - невалидные данные
 // 422 - невозможно обработать данные
 // 404 - нет ресурса
+const VALIDATION_ERROR_CODE = 400;
+const DATA_NOT_FOUND_ERROR_CODE = 404;
+const DEFAULT_ERROR_CODE = 500;
 
 const createCard = (req, res) => {
-  console.log(req.user._id)
   const { name, link } = req.body;
 
   return Card.create({ name, link, owner: req.user._id })
@@ -19,12 +21,12 @@ const createCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
 
-      res.status(500).send({ message: `Error while creating card ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating card ${err}` });
     });
 }
 
@@ -35,13 +37,7 @@ const getCards = (req, res) => {
       res.status(200).send(card);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
-
-        return;
-      }
-
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
 }
 
@@ -51,8 +47,8 @@ const removeCard = (req, res) => {
       res.status(200).send(card);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+      if (err.name === "CastError") {
+        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
@@ -72,12 +68,18 @@ const likeCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
 
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      if (err.name === "CastError") {
+        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: `Card not found ${err}` });
+
+        return;
+      }
+
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
 }
 
@@ -92,12 +94,18 @@ const dislikeCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
 
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      if (err.name === "CastError") {
+        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: `Card not found ${err}` });
+
+        return;
+      }
+
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
 }
 

@@ -9,6 +9,9 @@ const UserNotFound = require("../errors/UserNotFound");
 // 400 - невалидные данные
 // 422 - невозможно обработать данные
 // 404 - нет ресурса
+const VALIDATION_ERROR_CODE = 400;
+const DEFAULT_ERROR_CODE = 500;
+
 
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
@@ -19,7 +22,7 @@ const createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Error while validating user ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Error while validating user ${err}` });
 
         return;
       }
@@ -41,7 +44,7 @@ const getUser = (req, res) => {
 
         return;
       }
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
     });
 }
 
@@ -51,7 +54,7 @@ const getUsers = (req, res) => {
       res.status(200).send(users);
     })
     .catch((err) => {
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(500).send({ message: `Error ${err}` });
     });
 }
 
@@ -80,11 +83,11 @@ const editUser = (req, res) => {
         return;
       }
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
 }
 
@@ -113,11 +116,11 @@ const changeUserAvatar = (req, res) => {
         return;
       }
       if (err.name === "ValidationError") {
-        res.status(400).send({ message: `Invalid data ${err}` });
+        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
 }
 

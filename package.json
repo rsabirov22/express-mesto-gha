@@ -2,11 +2,8 @@
   "name": "mesto-express",
   "author": "Ruslan Sabirov",
   "version": "0.1.0",
-  "private": true,
   "homepage": ".",
   "dependencies": {
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/user-event": "^13.5.0",
     "express": "^4.18.1",
     "mongoose": "^6.5.1"
   },
@@ -20,8 +17,6 @@
     "eslint": "^8.22.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-react": "^7.30.1",
-    "gh-pages": "^4.0.0",
     "nodemon": "^2.0.19"
   }
 }

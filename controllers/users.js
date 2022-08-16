@@ -1,5 +1,5 @@
-const User = require("../models/user");
-const UserNotFound = require("../errors/UserNotFound");
+const User = require('../models/user');
+const UserNotFound = require('../errors/UserNotFound');
 
 // 200 - запрос прошел успешно
 // 201 - запрос прошел успешно, ресурс создан
@@ -12,7 +12,6 @@ const UserNotFound = require("../errors/UserNotFound");
 const VALIDATION_ERROR_CODE = 400;
 const DEFAULT_ERROR_CODE = 500;
 
-
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
@@ -21,17 +20,17 @@ const createUser = (req, res) => {
       res.status(201).send(user);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
+      if (err.name === 'ValidationError') {
         res.status(VALIDATION_ERROR_CODE).send({ message: `Error while validating user ${err}` });
 
         return;
       }
-      res.status(500).send({ message: `Error while creating user ${err}` });
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
-}
+};
 
-const getUser = (req, res) => {
-  return User.findById(req.user._id)
+const getUser = (req, res) => (
+  User.findById(req.params.userId)
     .orFail(() => {
       throw new UserNotFound();
     })
@@ -39,37 +38,39 @@ const getUser = (req, res) => {
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === "UserNotFound") {
-        res.status(err.status).send(err.message);
+      if (err.name === 'UserNotFound') {
+        res.status(err.status).send({ message: err.message });
 
         return;
       }
+      if (err.name === 'CastError') {
+        res.status(VALIDATION_ERROR_CODE).send({ message: 'Невалидный id пользователя' });
+      }
       res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
-    });
-}
+    })
+);
 
-const getUsers = (req, res) => {
-  return User.find({})
+const getUsers = (req, res) => (
+  User.find({})
     .then((users) => {
       res.status(200).send(users);
     })
     .catch((err) => {
       res.status(500).send({ message: `Error ${err}` });
-    });
-}
+    })
+);
 
 const editUser = (req, res) => {
   const { name, about } = req.body;
 
   return User.findByIdAndUpdate(
-      req.user._id,
-      { name, about },
-      {
-        new: true, // обработчик then получит на вход обновлённую запись
-        runValidators: true, // данные будут валидированы перед изменением
-        upsert: true // если пользователь не найден, он будет создан
-      }
-    )
+    req.user._id,
+    { name, about },
+    {
+      new: true, // обработчик then получит на вход обновлённую запись
+      runValidators: true, // данные будут валидированы перед изменением
+    },
+  )
     .orFail(() => {
       throw new UserNotFound();
     })
@@ -77,32 +78,31 @@ const editUser = (req, res) => {
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === "UserNotFound") {
-        res.status(err.status).send(err.message);
+      if (err.name === 'UserNotFound') {
+        res.status(err.status).send({ message: err.message });
 
         return;
       }
-      if (err.name === "ValidationError") {
+      if (err.name === 'ValidationError') {
         res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
       res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
-}
+};
 
 const changeUserAvatar = (req, res) => {
   const { avatar } = req.body;
 
   return User.findByIdAndUpdate(
-      req.user._id,
-      { avatar },
-      {
-        new: true, // обработчик then получит на вход обновлённую запись
-        runValidators: true, // данные будут валидированы перед изменением
-        upsert: true // если пользователь не найден, он будет создан
-      }
-    )
+    req.user._id,
+    { avatar },
+    {
+      new: true, // обработчик then получит на вход обновлённую запись
+      runValidators: true, // данные будут валидированы перед изменением
+    },
+  )
     .orFail(() => {
       throw new UserNotFound();
     })
@@ -110,18 +110,18 @@ const changeUserAvatar = (req, res) => {
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === "UserNotFound") {
-        res.status(err.status).send(err.message);
+      if (err.name === 'UserNotFound') {
+        res.status(err.status).send({ message: err.message });
 
         return;
       }
-      if (err.name === "ValidationError") {
+      if (err.name === 'ValidationError') {
         res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
 
         return;
       }
       res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
     });
-}
+};
 
 module.exports = { createUser, getUser, getUsers, editUser, changeUserAvatar };

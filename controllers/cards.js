@@ -1,5 +1,9 @@
 const Card = require('../models/card');
-
+const {
+  VALIDATION_ERROR_CODE,
+  DEFAULT_ERROR_CODE,
+  DATA_NOT_FOUND_ERROR_CODE,
+} = require('../errors/status/status');
 // 200 - запрос прошел успешно
 // 201 - запрос прошел успешно, ресурс создан
 // 401 - не авторизован
@@ -8,9 +12,6 @@ const Card = require('../models/card');
 // 400 - невалидные данные
 // 422 - невозможно обработать данные
 // 404 - нет ресурса
-const VALIDATION_ERROR_CODE = 400;
-const DATA_NOT_FOUND_ERROR_CODE = 404;
-const DEFAULT_ERROR_CODE = 500;
 
 const createCard = (req, res) => {
   const { name, link } = req.body;

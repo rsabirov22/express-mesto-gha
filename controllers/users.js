@@ -1,5 +1,13 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const UserNotFound = require('../errors/UserNotFound');
+const { getJwtToken } = require('../utils/jwt');
+const {
+  VALIDATION_ERROR_CODE,
+  DEFAULT_ERROR_CODE,
+} = require('../errors/status/status');
+
+const SALT_ROUNDS = 10;
 
 // 200 - запрос прошел успешно
 // 201 - запрос прошел успешно, ресурс создан
@@ -9,23 +17,49 @@ const UserNotFound = require('../errors/UserNotFound');
 // 400 - невалидные данные
 // 422 - невозможно обработать данные
 // 404 - нет ресурса
-const VALIDATION_ERROR_CODE = 400;
-const DEFAULT_ERROR_CODE = 500;
 
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  return User.create({ name, about, avatar })
-    .then((user) => {
-      res.status(201).send(user);
-    })
+  const { name, about, avatar, email, password } = req.body;
+  if (!email || !password) return res.status(VALIDATION_ERROR_CODE).send({ message: 'Email или пароль не могут быть пустыми' });
+  return bcrypt.hash(password, SALT_ROUNDS)
+    .then((hash) => User.create({ name, about, avatar, email, password: hash }))
+    .then((user) => res.status(201).send(user))
     .catch((err) => {
+      if (err.code === 11000) {
+        res.status(USER_EXISTS).send({ message: 'Такой пользователь уже существует' });
+
+        return;
+      }
       if (err.name === 'ValidationError') {
         res.status(VALIDATION_ERROR_CODE).send({ message: `Error while validating user ${err}` });
 
         return;
       }
       res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+    });
+};
+
+const login = (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(VALIDATION_ERROR_CODE).send({ message: 'Email или пароль не могут быть пустыми' });
+
+  return User.findOne({ email })
+    .then((user) => {
+      if (!user) return res.status(NOT_AUTHORIZED).send({ message: 'Неверная почта или пароль' });
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) return res.status(NOT_AUTHORIZED).send({ message: 'Неверная почта или пароль' });
+
+          const token = getJwtToken();
+
+          return res.status(200).cookie('jwt', token, {
+            maxAge: 3600000 * 24 * 7,
+            httpOnly: true,
+          }).send({ token });
+        });
+    })
+    .catch((err) => {
+      res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
     });
 };
 
@@ -45,6 +79,8 @@ const getUser = (req, res) => (
       }
       if (err.name === 'CastError') {
         res.status(VALIDATION_ERROR_CODE).send({ message: 'Невалидный id пользователя' });
+
+        return;
       }
       res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
     })
@@ -124,4 +160,4 @@ const changeUserAvatar = (req, res) => {
     });
 };
 
-module.exports = { createUser, getUser, getUsers, editUser, changeUserAvatar };
+module.exports = { createUser, getUser, getUsers, editUser, changeUserAvatar, login };

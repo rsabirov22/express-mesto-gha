@@ -5,7 +5,6 @@ const cardsRouter = require('./routes/cards');
 const auth = require('./middlewares/auth');
 
 const app = express();
-
 const { PORT = 3000 } = process.env;
 
 // подключаемся к серверу mongo
@@ -21,6 +20,19 @@ app.use('/', usersRouter);
 app.use('/', cardsRouter);
 app.use((req, res) => {
   res.status(404).send({ message: 'Такой страницы не существует' });
+});
+
+// здесь обрабатываем все ошибки
+app.use((err, req, res, next) => {
+  const { statusCode = 500, message } = err;
+  res
+    .status(statusCode)
+    .send({
+      // проверяем статус и выставляем сообщение в зависимости от него
+      message: statusCode === 500
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
 });
 
 app.listen(PORT, () => {

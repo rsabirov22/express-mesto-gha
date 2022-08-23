@@ -1,12 +1,26 @@
+/* eslint-disable consistent-return */
 const jwt = require('jsonwebtoken');
-const {
-  VALIDATION_ERROR_CODE,
-  NOT_AUTHORIZED,
-  USER_EXISTS,
-  DEFAULT_ERROR_CODE,
-  DATA_NOT_FOUND_ERROR_CODE,
-} = require('../errors/status/status');
+const NotAuthorizedError = require('../errors/NotAuthorizedError');
 
-module.exports = (req, res, next) => {
-  
-}; 
+const JWT_SECRET = 'e8fb1bc7bd4944241e25dea3df55b21199fad2906ed742a658c36a0bd61bb133';
+
+module.exports = async (req, res, next) => {
+  const { authorization } = req.headers;
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    throw new NotAuthorizedError('Необходима авторизация');
+  }
+
+  const token = authorization.replace('Bearer ', '');
+  // верифицируем токен
+  let payload;
+
+  try {
+    payload = await jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    throw new NotAuthorizedError('Необходима авторизация');
+  }
+
+  req.user = payload; // записываем пейлоуд в объект запроса
+
+  next();
+};

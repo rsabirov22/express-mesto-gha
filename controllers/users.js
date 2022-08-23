@@ -1,56 +1,46 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
-const UserNotFound = require('../errors/UserNotFound');
+const NotFoundError = require('../errors/NotFoundError');
+const ValidationError = require('../errors/ValidationError');
+const UserExistsError = require('../errors/UserExistsError');
+const NotAuthorizedError = require('../errors/NotAuthorizedError');
 const { getJwtToken } = require('../utils/jwt');
-const {
-  VALIDATION_ERROR_CODE,
-  DEFAULT_ERROR_CODE,
-} = require('../errors/status/status');
 
 const SALT_ROUNDS = 10;
 
-// 200 - запрос прошел успешно
-// 201 - запрос прошел успешно, ресурс создан
-// 401 - не авторизован
-// 403 - нет прав нет доступа
-// 500 - ошибка сервера
-// 400 - невалидные данные
-// 422 - невозможно обработать данные
-// 404 - нет ресурса
-
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const { name, about, avatar, email, password } = req.body;
-  if (!email || !password) return res.status(VALIDATION_ERROR_CODE).send({ message: 'Email или пароль не могут быть пустыми' });
+  if (!email || !password) throw new ValidationError('Email или пароль не могут быть пустыми');
   return bcrypt.hash(password, SALT_ROUNDS)
     .then((hash) => User.create({ name, about, avatar, email, password: hash }))
-    .then((user) => res.status(201).send(user))
+    .then((user) => {
+      const newUser = { ...user };
+      delete newUser._doc.password;
+      res.status(201).send(newUser);
+    })
     .catch((err) => {
       if (err.code === 11000) {
-        res.status(USER_EXISTS).send({ message: 'Такой пользователь уже существует' });
-
-        return;
+        next(new UserExistsError('Такой пользователь уже существует'));
       }
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Error while validating user ${err}` });
-
-        return;
+        next(new ValidationError('Ошибка при создании пользователя'));
       }
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     });
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(VALIDATION_ERROR_CODE).send({ message: 'Email или пароль не могут быть пустыми' });
+  if (!email || !password) throw new ValidationError('Email или пароль не могут быть пустыми');
 
-  return User.findOne({ email })
+  return User.findOne({ email }).select('+password')
     .then((user) => {
-      if (!user) return res.status(NOT_AUTHORIZED).send({ message: 'Неверная почта или пароль' });
+      if (!user) throw new NotAuthorizedError('Неверная почта или пароль');
       return bcrypt.compare(password, user.password)
         .then((matched) => {
-          if (!matched) return res.status(NOT_AUTHORIZED).send({ message: 'Неверная почта или пароль' });
+          if (!matched) throw new NotAuthorizedError('Неверная почта или пароль');
 
-          const token = getJwtToken();
+          const token = getJwtToken(user.id);
 
           return res.status(200).cookie('jwt', token, {
             maxAge: 3600000 * 24 * 7,
@@ -58,45 +48,37 @@ const login = (req, res) => {
           }).send({ token });
         });
     })
-    .catch((err) => {
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
-    });
+    .catch(next);
 };
 
-const getUser = (req, res) => (
+const getUser = (req, res, next) => (
   User.findById(req.params.userId)
     .orFail(() => {
-      throw new UserNotFound();
+      throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => {
       res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'UserNotFound') {
-        res.status(err.status).send({ message: err.message });
-
-        return;
+        next(new NotFoundError('Пользователь не найден'));
       }
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: 'Невалидный id пользователя' });
-
-        return;
+        next(new ValidationError('Невалидный id пользователя'));
       }
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
+      next(err);
     })
 );
 
-const getUsers = (req, res) => (
+const getUsers = (req, res, next) => (
   User.find({})
     .then((users) => {
       res.status(200).send(users);
     })
-    .catch((err) => {
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error ${err}` });
-    })
+    .catch(next)
 );
 
-const editUser = (req, res) => {
+const editUser = (req, res, next) => {
   const { name, about } = req.body;
 
   return User.findByIdAndUpdate(
@@ -108,27 +90,26 @@ const editUser = (req, res) => {
     },
   )
     .orFail(() => {
-      throw new UserNotFound();
+      throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => {
+      if (user._id !== req.user._id) {
+        throw new NotAuthorizedError('Нет прав на редактирование профиля');
+      }
       res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'UserNotFound') {
-        res.status(err.status).send({ message: err.message });
-
-        return;
+        next(new NotFoundError('Пользователь не найден'));
       }
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Переданы невалидные данные'));
       }
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     });
 };
 
-const changeUserAvatar = (req, res) => {
+const changeUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   return User.findByIdAndUpdate(
@@ -140,23 +121,22 @@ const changeUserAvatar = (req, res) => {
     },
   )
     .orFail(() => {
-      throw new UserNotFound();
+      throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => {
+      if (user._id !== req.user._id) {
+        throw new NotAuthorizedError('Нет прав на редактирование аватара');
+      }
       res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'UserNotFound') {
-        res.status(err.status).send({ message: err.message });
-
-        return;
+        next(new NotFoundError('Пользователь не найден'));
       }
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Переданы невалидные данные'));
       }
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     });
 };
 

@@ -1,19 +1,9 @@
 const Card = require('../models/card');
-const {
-  VALIDATION_ERROR_CODE,
-  DEFAULT_ERROR_CODE,
-  DATA_NOT_FOUND_ERROR_CODE,
-} = require('../errors/status/status');
-// 200 - запрос прошел успешно
-// 201 - запрос прошел успешно, ресурс создан
-// 401 - не авторизован
-// 403 - нет прав нет доступа
-// 500 - ошибка сервера
-// 400 - невалидные данные
-// 422 - невозможно обработать данные
-// 404 - нет ресурса
+const NotFoundError = require('../errors/NotFoundError');
+const ValidationError = require('../errors/ValidationError');
+const NotAuthorizedError = require('../errors/NotAuthorizedError');
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   return Card.create({ name, link, owner: req.user._id })
@@ -22,47 +12,43 @@ const createCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Невалидные данные'));
       }
 
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating card ${err}` });
+      next(err);
     });
 };
 
-const getCards = (req, res) => (
+const getCards = (req, res, next) => (
   Card.find({})
     .populate('owner')
     .then((card) => {
       res.status(200).send(card);
     })
-    .catch((err) => {
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
-    })
+    .catch(next)
 );
 
-const removeCard = (req, res) => (
+const removeCard = (req, res, next) => (
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Передан несуществующий _id карточки' });
-        return;
+        throw new NotFoundError('Передан несуществующий _id карточки');
+      }
+      if (card.owner !== req.user._id) {
+        throw new NotAuthorizedError('Нет прав на удаление карточки');
       }
       res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Переданы невалидные данные'));
       }
 
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     })
 );
 
-const likeCard = (req, res) => (
+const likeCard = (req, res, next) => (
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
@@ -70,29 +56,24 @@ const likeCard = (req, res) => (
   )
     .then((card) => {
       if (!card) {
-        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Передан несуществующий _id карточки' });
-        return;
+        throw new NotFoundError('Передан несуществующий _id карточки');
       }
       res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Переданы невалидные данные'));
       }
 
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Card not found ${err}` });
-
-        return;
+        next(new NotFoundError('Карточка не найдена'));
       }
 
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     })
 );
 
-const dislikeCard = (req, res) => (
+const dislikeCard = (req, res, next) => (
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
@@ -100,25 +81,20 @@ const dislikeCard = (req, res) => (
   )
     .then((card) => {
       if (!card) {
-        res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Передан несуществующий _id карточки' });
-        return;
+        throw new NotFoundError('Передан несуществующий _id карточки');
       }
       res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Invalid data ${err}` });
-
-        return;
+        next(new ValidationError('Переданы невалидные данные'));
       }
 
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR_CODE).send({ message: `Card not found ${err}` });
-
-        return;
+        next(new NotFoundError('Карточка не найдена'));
       }
 
-      res.status(DEFAULT_ERROR_CODE).send({ message: `Error while creating user ${err}` });
+      next(err);
     })
 );
 

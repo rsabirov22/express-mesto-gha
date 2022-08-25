@@ -78,6 +78,14 @@ const getUsers = (req, res, next) => (
     .catch(next)
 );
 
+const getCurrentUser = (req, res, next) => (
+  User.find({ _id: req.user._id })
+    .then((users) => {
+      res.status(200).send(users);
+    })
+    .catch(next)
+);
+
 const editUser = (req, res, next) => {
   const { name, about } = req.body;
 
@@ -140,4 +148,6 @@ const changeUserAvatar = (req, res, next) => {
     });
 };
 
-module.exports = { createUser, getUser, getUsers, editUser, changeUserAvatar, login };
+module.exports = {
+  createUser, getUser, getUsers, editUser, changeUserAvatar, login, getCurrentUser,
+};

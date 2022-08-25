@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const auth = require('./middlewares/auth');
@@ -21,7 +22,7 @@ app.use('/', cardsRouter);
 app.use((req, res) => {
   res.status(404).send({ message: 'Такой страницы не существует' });
 });
-
+app.use(errors()); // обработчик ошибок celebrate
 // здесь обрабатываем все ошибки
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;

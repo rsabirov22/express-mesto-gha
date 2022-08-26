@@ -15,7 +15,7 @@ router.post('/users', celebrate({
     about: Joi.string().min(2).max(30),
     email: Joi.string().required().email(),
     password: Joi.string().required(),
-    avatar: Joi.string(),
+    avatar: Joi.string().regex(/^(http[s]?:\/\/(www\.)?)[a-zA-Z1-9\-.]{1,}\.[a-z]{2,3}(\/?([a-zA-Z0-9\-._~:/?#[]@!$&'\(\)*\+,;=])?\/?){1,}#?/),
   }),
 }), createUser);
 router.post('/signin', celebrate({
@@ -40,7 +40,7 @@ router.patch('/users/me', celebrate({
 }), editUser);
 router.patch('/users/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string(),
+    avatar: Joi.string().regex(/^(http[s]?:\/\/(www\.)?)[a-zA-Z1-9\-.]{1,}\.[a-z]{2,3}(\/?([a-zA-Z0-9\-._~:/?#[]@!$&'\(\)*\+,;=])?\/?){1,}#?/),
   }),
 }), changeUserAvatar);
 

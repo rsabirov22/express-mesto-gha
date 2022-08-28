@@ -97,19 +97,14 @@ const editUser = (req, res, next) => {
       throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => {
-      if (user._id !== req.user._id) {
-        throw new NotAuthorizedError('Нет прав на редактирование профиля');
-      }
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === 'UserNotFound') {
-        next(new NotFoundError('Пользователь не найден'));
-      }
       if (err.name === 'ValidationError') {
         next(new ValidationError('Переданы невалидные данные'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -128,19 +123,14 @@ const changeUserAvatar = (req, res, next) => {
       throw new NotFoundError('Пользователь не найден');
     })
     .then((user) => {
-      if (user._id !== req.user._id) {
-        throw new NotAuthorizedError('Нет прав на редактирование аватара');
-      }
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === 'UserNotFound') {
-        next(new NotFoundError('Пользователь не найден'));
-      }
       if (err.name === 'ValidationError') {
         next(new ValidationError('Переданы невалидные данные'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 

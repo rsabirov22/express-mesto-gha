@@ -13,9 +13,9 @@ const createCard = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new ValidationError('Невалидные данные'));
+      } else {
+        next(err);
       }
-
-      next(err);
     });
 };
 
@@ -29,22 +29,21 @@ const getCards = (req, res, next) => (
 );
 
 const removeCard = (req, res, next) => (
-  Card.findByIdAndRemove(req.params.cardId)
+  Card.findById(req.params.cardId)
+    .orFail(() => new NotFoundError('Передан несуществующий id карточки'))
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Передан несуществующий _id карточки');
+      if (!card.owner.equals(req.user._id)) {
+        return next(new NotAuthorizedError('Нет прав на удаление карточки'));
       }
-      if (card.owner !== req.user._id) {
-        throw new NotAuthorizedError('Нет прав на удаление карточки');
-      }
-      res.status(200).send(card);
+      return card.remove()
+        .then(() => res.send({ message: 'Карточка удалена' }));
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new ValidationError('Переданы невалидные данные'));
+      } else {
+        next(err);
       }
-
-      next(err);
     })
 );
 
@@ -61,15 +60,11 @@ const likeCard = (req, res, next) => (
       res.status(200).send(card);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new ValidationError('Переданы невалидные данные'));
-      }
-
       if (err.name === 'CastError') {
-        next(new NotFoundError('Карточка не найдена'));
+        next(new ValidationError('Невалидные данные'));
+      } else {
+        next(err);
       }
-
-      next(err);
     })
 );
 
@@ -86,15 +81,11 @@ const dislikeCard = (req, res, next) => (
       res.status(200).send(card);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new ValidationError('Переданы невалидные данные'));
-      }
-
       if (err.name === 'CastError') {
-        next(new NotFoundError('Карточка не найдена'));
+        next(new ValidationError('Невалидные данные'));
+      } else {
+        next(err);
       }
-
-      next(err);
     })
 );
 

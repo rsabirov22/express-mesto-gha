@@ -10,28 +10,26 @@ const SALT_ROUNDS = 10;
 
 const createUser = (req, res, next) => {
   const { name, about, avatar, email, password } = req.body;
-  if (!email || !password) throw new ValidationError('Email или пароль не могут быть пустыми');
   return bcrypt.hash(password, SALT_ROUNDS)
     .then((hash) => User.create({ name, about, avatar, email, password: hash }))
     .then((user) => {
       const newUser = { ...user };
       delete newUser._doc.password;
-      res.status(201).send(newUser);
+      res.status(201).send(newUser._doc);
     })
     .catch((err) => {
       if (err.code === 11000) {
         next(new UserExistsError('Такой пользователь уже существует'));
-      }
-      if (err.name === 'ValidationError') {
+      } else if (err.name === 'ValidationError') {
         next(new ValidationError('Ошибка при создании пользователя'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  if (!email || !password) throw new ValidationError('Email или пароль не могут быть пустыми');
 
   return User.findOne({ email }).select('+password')
     .then((user) => {
@@ -60,13 +58,11 @@ const getUser = (req, res, next) => (
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === 'UserNotFound') {
-        next(new NotFoundError('Пользователь не найден'));
-      }
       if (err.name === 'CastError') {
         next(new ValidationError('Невалидный id пользователя'));
+      } else {
+        next(err);
       }
-      next(err);
     })
 );
 
@@ -79,7 +75,7 @@ const getUsers = (req, res, next) => (
 );
 
 const getCurrentUser = (req, res, next) => (
-  User.find({ _id: req.user._id })
+  User.findById({ _id: req.user._id })
     .then((users) => {
       res.status(200).send(users);
     })

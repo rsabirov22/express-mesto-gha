@@ -1,11 +1,14 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const { errors } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const auth = require('./middlewares/auth');
+const NotFoundError = require('./errors/NotFoundError');
 
 const app = express();
+app.use(cookieParser());
 const { PORT = 3000 } = process.env;
 
 // подключаемся к серверу mongo
@@ -19,8 +22,8 @@ app.post('/signup', usersRouter);
 app.use(auth);
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
-app.use((req, res) => {
-  res.status(404).send({ message: 'Такой страницы не существует' });
+app.use((req, res, next) => {
+  next(new NotFoundError('Такой страницы не существует'));
 });
 app.use(errors()); // обработчик ошибок celebrate
 // здесь обрабатываем все ошибки

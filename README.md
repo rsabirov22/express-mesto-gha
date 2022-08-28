@@ -1,7 +1,9 @@
 [![Tests](https://github.com/yandex-praktikum/express-mesto-gha/actions/workflows/tests-13-sprint.yml/badge.svg)](https://github.com/yandex-praktikum/express-mesto-gha/actions/workflows/tests-13-sprint.yml) [![Tests](https://github.com/yandex-praktikum/express-mesto-gha/actions/workflows/tests-14-sprint.yml/badge.svg)](https://github.com/yandex-praktikum/express-mesto-gha/actions/workflows/tests-14-sprint.yml)
 # Проект Mesto фронтенд + бэкенд
 
+## Описание
 
+SPA веб-приложение для фотографий из различных живописных мест страны. Пользователь имеет возможность добавлять фотографии, ставить лайки, удалять карточки, а так же редактировать аватар, свое имя и описание рода деятельности. По клику на фотографию можно перейти в режим полномасштабного просмотра фотографии. Приложение создано с помощью Create React App. Добавлена возможность регистрации и авторизации пользователя.
 
 ## Настройка бейджей статуса тестов
 Перед началом работы над проектом рекомендуется исправить бейджи, отражающие статус прохождения тестов.

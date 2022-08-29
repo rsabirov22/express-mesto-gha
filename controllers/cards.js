@@ -1,7 +1,7 @@
 const Card = require('../models/card');
 const NotFoundError = require('../errors/NotFoundError');
 const ValidationError = require('../errors/ValidationError');
-const NotAuthorizedError = require('../errors/NotAuthorizedError');
+const NoAccessError = require('../errors/NoAccessError');
 
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
@@ -33,7 +33,7 @@ const removeCard = (req, res, next) => (
     .orFail(() => new NotFoundError('Передан несуществующий id карточки'))
     .then((card) => {
       if (!card.owner.equals(req.user._id)) {
-        return next(new NotAuthorizedError('Нет прав на удаление карточки'));
+        return next(new NoAccessError('Нет прав на удаление карточки'));
       }
       return card.remove()
         .then(() => res.send({ message: 'Карточка удалена' }));
